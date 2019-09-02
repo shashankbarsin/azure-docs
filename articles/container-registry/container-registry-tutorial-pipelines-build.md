@@ -4,16 +4,15 @@ description: Learn how to use Azure Pipelines for building and pushing images to
 services: container-registry
 author: shashankbarsin
 manager: gwallace
-
 ms.service: container-registry
 ms.topic: quickstart
 ms.date: 08/17/2019
 ms.author: shasb
 ---
 
-# Build and push images to Azure Container Registry using Azure Pipelines
+# Continuous integration in Azure Pipelines
 
-In this step-by-step guide you'll learn how to use Azure Pipelines for building and pushing an image to Azure Container Registry. With each update made to code in the version control repository, an image is built and pushed to Azure Container Registry.
+In this step-by-step guide you'll learn how to use Azure Pipelines for building and pushing an image to Azure Container Registry. With each update made to the source control repository, an image is built and pushed to Azure Container Registry.
 
 ## Pre-requisites
 
@@ -29,7 +28,7 @@ In this step-by-step guide you'll learn how to use Azure Pipelines for building 
 
 Fork the following repository on GitHub:
 ```
-https://github.com/MicrosoftDocs/pipelines-javascript-docker
+https://github.com/MicrosoftDocs/azure-pipelines-canary-k8s
 ```
 
 ## Create a container registry
@@ -49,6 +48,12 @@ az acr create --resource-group myapp-rg --name myContainerRegistry --sku Basic
 Sign in to [Azure Pipelines](https://azure.microsoft.com/services/devops/pipelines). After you sign in, your browser goes to `https://dev.azure.com/my-organization-name` and displays your Azure DevOps dashboard.
 
 Within your selected organization, create a project. If you don't have any projects in your organization, you see a **Create a project to get started** screen. Otherwise, select the **New Project** button in the upper-right corner of the dashboard.
+
+## Create service connections
+[Service connections](https://docs.microsoft.com/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml) are entities used in Azure Pipelines to connect to external resources.
+
+1. Navigate to Project settings -> Pipelines -> Service connections.
+2. Create a [Docker registry service connection](https://docs.microsoft.com/azure/devops/pipelines/library/service-endpoints?view=azure-devops#sep-docreg) associated with your container registry. Name it **acrServiceConnection**.
 
 ## Create the pipeline
 
@@ -73,63 +78,34 @@ Within your selected organization, create a project. If you don't have any proje
 
 6. You might be redirected to GitHub to install the Azure Pipelines app. If so, select **Approve and install**.
 
-### Configure template
+7. When the **Configure** tab appears, choose **Starter pipeline**.
 
-When the **Configure** tab appears, select **Docker** (Build and push an image to Azure Container Registry).
+8. In Review tab, replace the contents of the pipeline YAML with the following snippet -
 
-1. If you are prompted, select the subscription in which you created your registry.
-
-2. Select the container registry that you created above.
-
-3. Select **Validate and configure**.
-
-   As Azure Pipelines creates your pipeline, it:
-
-   * Creates a [Docker registry service connection](https://docs.microsoft.com/azure/devops/pipelines/library/service-endpoints?view=azure-devops#sep-docreg) to enable your pipeline to push images into your container registry.
-
-   * Generates an *azure-pipelines.yml* file, which defines your pipeline.
-  
-4. When your new pipeline appears, take a look at the YAML to see what it does (for more information, see [How we build your pipeline](#how) below). When you're ready, select **Save and run**.
+    ```YAML
+    trigger:
+    - master
+    
+    pool:
+      vmImage: Ubuntu-16.04
+    
+    variables:
+      imageName: azure-pipelines-k8s
+    
+    steps:
+    - task: Docker@2
+      displayName: Build and push image
+      inputs:
+        containerRegistry: acrSC
+        repository: $(imageName)
+        command: buildAndPush
+        Dockerfile: app/Dockerfile
+        tags: |
+          $(Build.BuildId)
+    ```
 
 5. The commit that will create your new pipeline appears. Select **Save and run**.
 
 6. If you want, change the **Commit message** to something like _Add pipeline to our repository_. When you're ready, select **Save and run** to commit the new pipeline into your repository, and then begin the first run of your new pipeline!
 
 As your pipeline runs, select the build job to watch your pipeline in action.
-
-<a name="how"></a>
-## How we build your pipeline
-
-When you finished selecting options and then proceeded to validate and configure the pipeline (see above) Azure Pipelines created a pipeline for you using a template meant for building and pushing an image to Azure Container Registry.
-
-The build stage uses the [Docker task](https://docs.microsoft.com/azure/devops/pipelines/tasks/build/docker?view=azure-devops) to build and push the image to the container registry.
-
-```YAML
-- stage: Build
-  displayName: Build and push stage
-  jobs:  
-  - job: Build
-    displayName: Build job
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-```
-
-## Clean up resources
-
-Whenever you're done with the resources you created above, you can use the following command to delete them:
-
-```azurecli-interactive
-az group delete --name myapp-rg
-```
-
-Type `y` when prompted.

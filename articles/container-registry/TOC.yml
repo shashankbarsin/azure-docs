@@ -19,6 +19,12 @@
     href: container-registry-event-grid-quickstart.md
 - name: Tutorials
   items:
+  - name: Azure Pipelines
+    items:
+    - name: Build and push images
+      href: container-registry-tutorial-pipelines-build.md
+    - name: Continuous deployment
+      href: container-registry-tutorial-pipelines-cd.md
   - name: ACR tasks
     items:
     - name: 1 - Build images in Azure
@@ -29,10 +35,6 @@
       href: container-registry-tutorial-multistep-task.md
     - name: 3 - Base image update builds
       href: container-registry-tutorial-base-image-update.md
-  - name: Azure Pipelines
-    items:
-    - name: Build and push images
-      href: container-registry-tutorial-pipelines-build.md
   - name: Geo-replicate a registry
     items:
     - name: 1 - Prepare container registry
